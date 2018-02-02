@@ -4,13 +4,16 @@ module Parser.Pretty where
 
 import Data.Decimal (Decimal)
 import Data.Text.Prettyprint.Doc
-       (Pretty, (<+>), (<>), cat, dquotes, encloseSep, indent, line,
-        pretty, sep, vcat)
+       (Doc, Pretty, (<+>), (<>), cat, dquotes, encloseSep, hardline,
+        indent, line, pretty, sep, vcat, vsep)
 import Data.Time.Calendar (Day)
 
 import Parser.AST
        (AccountName(..), CommodityName(..), Config(..), Directive(..),
         Flag(..), Lot(..), Posting(..), Statement(..), Tag(..))
+
+prettyPrint :: [Directive] -> Doc a
+prettyPrint = vsep . map ((<> hardline) . pretty)
 
 instance Pretty Directive where
   pretty (Statement t d) = pretty t <+> pretty d

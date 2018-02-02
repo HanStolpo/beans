@@ -1,13 +1,19 @@
 module Parser
   ( parse
+  , recursiveParse
   ) where
 
 import Control.Monad (void)
 import Control.Monad.Catch (MonadThrow, throwM)
+import Control.Monad.IO.Class (MonadIO)
+import Control.Monad.Trans (liftIO)
 import Data.Decimal (Decimal)
 import Data.Functor.Identity (Identity)
 import Data.Text.Lazy (Text, cons, pack, unpack)
+import Data.Text.Lazy.IO (readFile)
 import Data.Time.Calendar (Day, fromGregorian)
+import Prelude hiding (readFile)
+import System.FilePath.Posix ((</>), takeDirectory)
 import Text.Parsec
        ((<|>), alphaNum, anyChar, between, char, count, digit, eof,
         letter, many, many1, manyTill, newline, noneOf, oneOf, optionMaybe,
@@ -144,3 +150,13 @@ parse f t =
   case P.parse directives f t of
     Left e -> throwM $ ParseException e
     Right d -> return d
+
+recursiveParse :: (MonadIO m, MonadThrow m) => FilePath -> m [Directive]
+recursiveParse f = do
+  fileContent <- liftIO $ readFile f
+  ds <- parse f fileContent
+  let absPaths = [takeDirectory f </> r | r <- collectRelativePaths ds]
+  (ds ++) . concat <$> traverse recursiveParse absPaths
+
+collectRelativePaths :: [Directive] -> [FilePath]
+collectRelativePaths ds = [relPath | (Config (Include relPath)) <- ds]

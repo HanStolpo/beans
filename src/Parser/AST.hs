@@ -12,10 +12,15 @@ newtype ParseException =
 
 instance Exception ParseException
 
+newtype Directives =
+  Directives [Directive]
+  deriving (Eq, Show)
+
 data Directive
   = Statement Day
               Statement
   | Config Config
+  deriving (Eq, Show)
 
 data Statement
   = Price CommodityName
