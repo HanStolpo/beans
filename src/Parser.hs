@@ -28,31 +28,16 @@ import Parser.AST
 
 type Parser = P.ParsecT Text () Identity
 
-space :: Parser Char
-space = char ' '
-
-dash :: Parser Char
-dash = char '-'
-
-colon :: Parser Char
-colon = char ':'
-
-hash :: Parser Char
-hash = char '#'
-
-doubleQuote :: Parser Char
-doubleQuote = char '\"'
-
 token :: Parser a -> Parser a
-token p = p <* many space
-
-readInt :: (Read a) => Int -> Parser a
-readInt n = read <$> count n digit
+token p = p <* many (char ' ')
 
 date :: Parser Day
 date =
   token $
   fromGregorian <$> readInt 4 <* dash <*> readInt 2 <* dash <*> readInt 2
+  where
+    readInt n = read <$> count n digit
+    dash = char '-'
 
 text :: Parser Char -> Parser Text
 text p = pack <$> many p
@@ -64,10 +49,7 @@ symbol :: String -> Parser Text
 symbol i = token $ pack <$> string i
 
 quotedString :: Parser Text
-quotedString = token $ text (noneOf "\"") `surroundedBy` doubleQuote
-
-braces :: Parser a -> Parser a
-braces = between (symbol "{") (symbol "}")
+quotedString = token $ text (noneOf "\"") `surroundedBy` char '\"'
 
 decimal :: Parser Decimal
 decimal = token $ sign <*> fractional2 True
@@ -75,54 +57,50 @@ decimal = token $ sign <*> fractional2 True
 accountNameSegment :: Parser Text
 accountNameSegment = cons <$> letter <*> text alphaNum
 
-accountName :: Parser AccountName
-accountName = token $ AccountName <$> accountNameSegment `sepBy` colon
+account :: Parser AccountName
+account = token $ AccountName <$> accountNameSegment `sepBy` char ':'
 
-commodityName :: Parser CommodityName
-commodityName = token $ CommodityName . pack <$> many1 alphaNum
-
-postingPrice :: Parser ()
-postingPrice =
-  (try (symbol "@@") <|> symbol "@") >> decimal >> commodityName >> pure ()
+commodity :: Parser CommodityName
+commodity = token $ CommodityName . pack <$> many1 alphaNum
 
 lot :: Parser Lot
-lot = braces $ Lot <$> decimal <*> commodityName <*> date' <*> label'
+lot = braces $ Lot <$> decimal <*> commodity <*> date' <*> label'
   where
     date' = optionMaybe (symbol "," >> date)
     label' = optionMaybe (symbol "," >> quotedString)
+    braces = between (symbol "{") (symbol "}")
 
 posting :: Parser Posting
 posting = newline >> symbol " " >> (try posting' <|> wildcard)
   where
     posting' =
-      Posting <$> accountName <*> decimal <*> commodityName <*> optionMaybe lot <*
+      Posting <$> account <*> decimal <*> commodity <*> optionMaybe lot <*
       optionMaybe postingPrice
-    wildcard = Wildcard <$> accountName
-
-flagIncomplete :: Parser Flag
-flagIncomplete = Incomplete <$ symbol "!"
-
-flagComplete :: Parser Flag
-flagComplete = Complete <$ symbol "*"
+    wildcard = Wildcard <$> account
+    postingPrice =
+      (try (symbol "@@") <|> symbol "@") >> decimal >> commodity >> pure ()
 
 flag :: Parser Flag
 flag = flagComplete <|> flagIncomplete
+  where
+    flagIncomplete = Incomplete <$ symbol "!"
+    flagComplete = Complete <$ symbol "*"
 
 tag :: Parser Tag
-tag = Tag <$> (cons <$> hash <*> text alphaNum)
+tag = token $ Tag <$> (cons <$> char '#' <*> text alphaNum)
 
 statement :: Parser Statement
 statement = open <|> close <|> balance <|> price <|> transaction
   where
-    transaction =
-      Transaction <$> flag <*> quotedString <*> many tag <*> many1 (try posting)
-    open =
-      Open <$ symbol "open" <*> accountName <*> commodityName `sepBy` symbol ","
-    close = Close <$ symbol "close" <*> accountName
-    balance =
-      Balance <$ symbol "balance" <*> accountName <*> decimal <*> commodityName
-    price =
-      Price <$ symbol "price" <*> commodityName <*> decimal <*> commodityName
+    open = Open <$ symbol "open" <*> account <*> commodity `sepBy` symbol ","
+    close = Close <$ symbol "close" <*> account
+    balance = Balance <$ symbol "balance" <*> account <*> decimal <*> commodity
+    price = Price <$ symbol "price" <*> commodity <*> decimal <*> commodity
+    transaction = Transaction <$> flag <*> desc <*> tags <*> postings
+      where
+        tags = many tag
+        desc = quotedString
+        postings = many1 $ try posting
 
 config :: Parser Config
 config = include <|> option
@@ -131,19 +109,19 @@ config = include <|> option
     option = symbol "option" >> Option <$> quotedString <*> quotedString
 
 directive :: Parser Directive
-directive = (Statement <$> date <*> statement) <|> Config <$> config
+directive = stmt <|> cfg
+  where
+    stmt = Statement <$> date <*> statement
+    cfg = Config <$> config
 
-eol :: Parser ()
-eol = void $ token newline
-
-comment :: Parser ()
-comment = void (oneOf ";#" >> anyChar `manyTill` try eol)
-
-block :: Parser a -> Parser a
-block p = p `surroundedBy` many (comment <|> eol)
+space :: Parser ()
+space = void $ many (comment <|> eol)
+  where
+    eol = void $ token newline
+    comment = void $ oneOf ";#" >> anyChar `manyTill` try eol
 
 directives :: Parser [Directive]
-directives = many (block directive) <* eof
+directives = many (directive `surroundedBy` space) <* eof
 
 parse :: (MonadThrow m) => FilePath -> Text -> m [Directive]
 parse f t =
@@ -153,8 +131,8 @@ parse f t =
 
 recursiveParse :: (MonadIO m, MonadThrow m) => FilePath -> m [Directive]
 recursiveParse f = do
-  fileContent <- liftIO $ readFile f
-  ds <- parse f fileContent
+  content <- liftIO $ readFile f
+  ds <- parse f content
   let absPaths = [takeDirectory f </> r | r <- collectRelativePaths ds]
   (ds ++) . concat <$> traverse recursiveParse absPaths
 
