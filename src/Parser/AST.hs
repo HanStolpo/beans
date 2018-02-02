@@ -1,14 +1,9 @@
 module Parser.AST where
 
 import Control.Exception (Exception)
-import Data.Account (AccountName(..))
-import Data.Amount (Amount)
-import Data.Commodity (CommodityName(..))
 import Data.Decimal (Decimal)
-import Data.Posting (Posting)
-import Data.Text.Lazy (Text)
+import Data.Text.Lazy (Text, intercalate, unpack)
 import Data.Time.Calendar (Day)
-import Data.Transaction (Transaction)
 import Text.Parsec (ParseError)
 
 newtype ParseException =
@@ -17,57 +12,64 @@ newtype ParseException =
 
 instance Exception ParseException
 
--- Type to wrap the AST of a file
-data Directive a
-  = Opn Open
-        a
-  | Bal Balance
-        a
-  | Trn Transaction
-        a
-  | Cls Close
-        a
-  | Prc Price
-        a
-  | Opt Option
-        a
-  | Inc Include
-        a
-  deriving (Eq, Show, Functor, Ord)
+data Directive
+  = Statement Day
+              Statement
+  | Config Config
 
-data Balance = Balance
-  { _date :: Day
-  , _accountName :: AccountName
-  , _amount :: Amount Decimal
-  } deriving (Eq, Show, Ord)
+data Statement
+  = Price CommodityName
+          Decimal
+          CommodityName
+  | Open AccountName
+         [CommodityName]
+  | Balance AccountName
+            Decimal
+            CommodityName
+  | Transaction Flag
+                Text
+                [Tag]
+                [Posting]
+  | Close AccountName
+  deriving (Eq, Ord, Show)
 
-data Open = Open
-  { _date :: Day
-  , _accountName :: AccountName
-  , _commodities :: [CommodityName]
-  } deriving (Show, Eq, Ord)
+data Config
+  = Option Text
+           Text
+  | Include FilePath
+  deriving (Eq, Show, Ord)
 
-data Close = Close
-  { _date :: Day
-  , _accountName :: AccountName
-  } deriving (Show, Eq, Ord)
+data Flag
+  = Complete
+  | Incomplete
+  deriving (Eq, Show, Ord)
 
-data Price = Price
-  { _date :: Day
-  , _commodity :: CommodityName
-  , _price :: Amount Decimal
-  } deriving (Show, Eq, Ord)
-
-newtype Include = Include
-  { _filePath :: FilePath
-  } deriving (Show, Eq, Ord)
-
-data Option =
-  Option Text
-         Text
+newtype Tag =
+  Tag Text
   deriving (Show, Eq, Ord)
 
-data PostingDirective
-  = WildcardPosting AccountName
-  | CompletePosting (Posting Decimal)
+data Posting
+  = Posting AccountName
+            Decimal
+            CommodityName
+            (Maybe Lot)
+  | Wildcard AccountName
   deriving (Show, Eq, Ord)
+
+data Lot =
+  Lot Decimal
+      CommodityName
+      (Maybe Day)
+      (Maybe Text)
+  deriving (Show, Eq, Ord)
+
+newtype CommodityName =
+  CommodityName Text
+  deriving (Show, Eq, Ord)
+
+newtype AccountName =
+  AccountName [Text]
+  deriving (Eq, Ord)
+
+instance Show AccountName where
+  show (AccountName n) = (unpack . intercalate ":") n

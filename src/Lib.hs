@@ -8,19 +8,17 @@ import Control.Monad.Trans (liftIO)
 import Data.Text.Lazy.IO (readFile)
 import Data.Text.Prettyprint.Doc
 import Parser (parse)
-import Parser.AST (Directive(..), Include(..))
+import Parser.AST (Config(..), Directive(..))
 import Parser.Pretty ()
 import Prelude hiding (readFile)
 import System.Environment (getArgs)
 import System.FilePath.Posix ((</>), takeDirectory)
-import qualified Text.Parsec as P
 
-collectRelativePaths :: [Directive a] -> [FilePath]
+collectRelativePaths :: [Directive] -> [FilePath]
 collectRelativePaths directives =
-  [relPath | (Inc (Include relPath) _) <- directives]
+  [relPath | (Config (Include relPath)) <- directives]
 
-recursiveParse ::
-     (MonadIO m, MonadThrow m) => FilePath -> m [Directive P.SourcePos]
+recursiveParse :: (MonadIO m, MonadThrow m) => FilePath -> m [Directive]
 recursiveParse filePath = do
   fileContent <- liftIO $ readFile filePath
   directives <- parse filePath fileContent
@@ -28,7 +26,7 @@ recursiveParse filePath = do
       absPaths = (dirPath </>) <$> collectRelativePaths directives
   (directives ++) . concat <$> traverse recursiveParse absPaths
 
-prettyPrint :: [Directive P.SourcePos] -> IO ()
+prettyPrint :: [Directive] -> IO ()
 prettyPrint = print . vsep . map ((<> hardline) . pretty)
 
 doParse :: (MonadIO m, MonadThrow m) => m ()
