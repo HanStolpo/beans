@@ -111,8 +111,8 @@ config = include <|> option
 directive :: Parser Directive
 directive = stmt <|> cfg
   where
-    stmt = Statement <$> date <*> statement
-    cfg = Config <$> config
+    stmt = Stmt <$> date <*> statement
+    cfg = Cfg <$> config
 
 space :: Parser ()
 space = void $ many (comment <|> eol)
@@ -137,4 +137,4 @@ recursiveParse f = do
   (ds ++) . concat <$> traverse recursiveParse absPaths
 
 collectRelativePaths :: [Directive] -> [FilePath]
-collectRelativePaths ds = [relPath | (Config (Include relPath)) <- ds]
+collectRelativePaths ds = [relPath | (Cfg (Include relPath)) <- ds]

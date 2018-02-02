@@ -13,9 +13,9 @@ newtype ParseException =
 instance Exception ParseException
 
 data Directive
-  = Statement Day
-              Statement
-  | Config Config
+  = Stmt Day
+         Statement
+  | Cfg Config
   deriving (Eq, Show)
 
 data Statement
@@ -24,13 +24,13 @@ data Statement
           CommodityName
   | Open AccountName
          [CommodityName]
-  | Balance AccountName
-            Decimal
-            CommodityName
   | Transaction Flag
                 Text
                 [Tag]
                 [Posting]
+  | Balance AccountName
+            Decimal
+            CommodityName
   | Close AccountName
   deriving (Eq, Ord, Show)
 

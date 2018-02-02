@@ -16,8 +16,8 @@ prettyPrint :: [Directive] -> Doc a
 prettyPrint = vsep . map ((<> hardline) . pretty)
 
 instance Pretty Directive where
-  pretty (Statement t d) = pretty t <+> pretty d
-  pretty (Config t) = pretty t
+  pretty (Stmt t d) = pretty t <+> pretty d
+  pretty (Cfg t) = pretty t
 
 instance Pretty Statement where
   pretty (Transaction flag desc tags postings) =
