@@ -5,7 +5,7 @@ module Haricot.AST
 import qualified Data.List           as L
 import           Data.Maybe          (catMaybes)
 import           Data.Scientific     (Scientific)
-import           Data.Text.Lazy      (Text, intercalate, unpack)
+import           Data.Text.Lazy      (Text, unpack)
 import           Data.Time.Calendar  (Day)
 import qualified Text.Megaparsec.Pos as P
 
@@ -115,16 +115,11 @@ data Option =
          Text
   deriving (Show, Eq)
 
-newtype AccountName = AccountName
-  { _unAccountName :: [Text]
-  } deriving (Eq, Ord)
+type AccountName = [Segment]
 
-instance Monoid AccountName where
-  mempty = AccountName []
-  (AccountName n1) `mappend` (AccountName n2) = AccountName (n1 `mappend` n2)
-
-instance Show AccountName where
-  show = unpack . intercalate ":" . _unAccountName
+newtype Segment = Segment
+  { _unSegment :: Text
+  } deriving (Eq, Ord, Show)
 
 newtype CommodityName = CommodityName
   { _unCommodityName :: Text

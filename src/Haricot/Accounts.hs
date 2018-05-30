@@ -17,7 +17,7 @@ import qualified Data.Map.Merge.Strict as MM
 import qualified Data.Map.Strict       as M
 import           Data.Scientific       (Scientific)
 import           Data.Time.Calendar    (Day)
-import           Haricot.AST           (AccountName (..), Balance (..),
+import           Haricot.AST           (AccountName, Balance (..),
                                         Close (..), CommodityName (..),
                                         Lot (..), Open (..), Posting (..),
                                         Restriction (..), Transaction (..),

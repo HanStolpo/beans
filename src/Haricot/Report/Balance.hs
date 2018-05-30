@@ -6,7 +6,7 @@ import           Data.Scientific.Extended (FPFormat (Fixed), Scientific,
                                            formatScientific)
 import           Data.Text.Lazy           (Text, pack)
 import           Haricot.Accounts         (Accounts, Key (..))
-import           Haricot.AST              (AccountName (..), 
+import           Haricot.AST              (Segment(..), AccountName, 
                                            Lot (NoLot))
 import           Haricot.Report.Table     (ColDesc (..), left, right, showTable)
 
@@ -27,9 +27,7 @@ tree :: Group -> Group
 tree a = a
 
 splitAccountName :: Int -> AccountName -> (AccountName, AccountName)
-splitAccountName n (AccountName a) =
-  let (prefix, suffix) = L.splitAt n a
-   in (AccountName prefix, AccountName suffix)
+splitAccountName  = L.splitAt
 
 part :: Ord l => (a -> l) -> [a] -> [(l, [a])]
 part key list =
@@ -61,7 +59,7 @@ formatStandard = formatScientific Fixed (Just 2)
 summarize :: Int -> Accounts -> Accounts
 summarize d = M.mapKeysWith (+) m
   where
-    m Key {..} = Key {keyAccount = AccountName $ take d (_unAccountName keyAccount), ..}
+    m Key {..} = Key {keyAccount =  take d keyAccount, ..}
 
 eraseLots :: Accounts -> Accounts
 eraseLots = M.mapKeysWith (+) (\k -> k {keyLot = NoLot})
@@ -69,4 +67,4 @@ eraseLots = M.mapKeysWith (+) (\k -> k {keyLot = NoLot})
 eraseAccounts :: Text -> Accounts -> Accounts
 eraseAccounts label = M.mapKeysWith (+) m
   where
-    m k = k { keyAccount = AccountName [label, pack $ show (keyCommodity k)] }
+    m k = k { keyAccount = [Segment label, Segment . pack $ show (keyCommodity k)] }

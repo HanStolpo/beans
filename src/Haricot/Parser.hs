@@ -12,13 +12,24 @@ import qualified Data.Set                   as S
 import           Data.Text.Lazy             (Text, cons, unpack)
 import           Data.Text.Lazy.IO          (readFile)
 import           Data.Time.Calendar         (Day, fromGregorian)
-import           Haricot.AST                (AccountName (..), Balance (..),
-                                             Close (..), CommodityName (..),
-                                             Directive (..), Flag (..),
-                                             Include (..), Lot (..), Open (..),
-                                             Option (..), Posting (..),
-                                             Price (..), Restriction (..),
-                                             Tag (..), Transaction (..))
+import Haricot.AST
+  ( AccountName
+  , Balance(..)
+  , Close(..)
+  , CommodityName(..)
+  , Directive(..)
+  , Flag(..)
+  , Include(..)
+  , Lot(..)
+  , Open(..)
+  , Option(..)
+  , Posting(..)
+  , Price(..)
+  , Restriction(..)
+  , Segment(..)
+  , Tag(..)
+  , Transaction(..)
+  )
 import           Prelude                    hiding (readFile)
 import           System.FilePath.Posix      (combine, takeDirectory)
 import           Text.Megaparsec            (ErrorFancy (..), Parsec,
@@ -75,8 +86,11 @@ date =
 identifier :: Parser Text
 identifier = cons <$> letterChar <*> takeWhileP (Just "alphanumeric") isAlphaNum
 
+segment :: Parser Segment
+segment = Segment <$> identifier
+
 account :: Parser AccountName
-account = lexeme $ AccountName <$> identifier `sepBy` colon
+account = lexeme $ segment `sepBy` colon
   where
     colon = symbol ":"
 

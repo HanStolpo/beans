@@ -15,7 +15,7 @@ import           Data.Time.LocalTime      (getZonedTime, localDay,
                                            zonedTimeToLocalTime)
 import           Haricot.Accounts         (Accounts, AccountsHistory,
                                            calculateAccounts, diffAccounts)
-import           Haricot.AST              (AccountName (..), CommodityName (..))
+import           Haricot.AST              (Segment(..), CommodityName (..))
 import           Haricot.Ledger           (Ledger, buildLedger)
 import           Haricot.Parser           (parseFile)
 import           Haricot.Report.Balance   (eraseLots, printAccounts, summarize)
@@ -40,8 +40,7 @@ runHaricot :: (MonadIO m, MonadThrow m) => Options -> m ()
 runHaricot = runReaderT run
 
 run :: (MonadIO m, MonadThrow m, MonadReader Options m) =>  m ()
-run = do
-  parseStage >>= valuationStage >>= accountsStage >>= reportStage >>=
+run = parseStage >>= valuationStage >>= accountsStage >>= reportStage >>=
     aggregationStage >>=
     liftIO . printAccounts
 
@@ -50,7 +49,7 @@ parseStage = buildLedger <$> (asks optJournal >>= parseFile)
 
 valuationStage :: (MonadIO m, MonadThrow m, MonadReader Options m) => Ledger -> m Ledger
 valuationStage ledger = do
-    let account = AccountName ["Equity", "Valuation"]
+    let account =  [Segment "Equity", Segment "Valuation"]
     asks optMarket >>= \m -> maybe pure (`calculateValuation` account) m ledger
 
 accountsStage :: (MonadIO m, MonadThrow m, MonadReader Options m) => Ledger -> m AccountsHistory

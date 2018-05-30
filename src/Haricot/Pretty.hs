@@ -9,19 +9,19 @@ import qualified Data.Map.Strict           as M
 import           Data.Scientific           (Scientific)
 import           Data.Text.Prettyprint.Doc
 import           Data.Time.Calendar        (Day)
-import           Haricot.AST               (AccountName (..), Balance (..),
-                                            Close (..), CommodityName (..),
-                                            Directive (..), Flag (..),
-                                            Include (..), Lot (..), Open (..),
-                                            Option (..), Posting (..),
-                                            Price (..), Restriction (..),
+import           Haricot.AST               (Balance (..), Close (..),
+                                            CommodityName (..), Directive (..),
+                                            Flag (..), Include (..), Lot (..),
+                                            Open (..), Option (..),
+                                            Posting (..), Price (..),
+                                            Restriction (..), Segment (..),
                                             Tag (..), Transaction (..))
 import           Haricot.Ledger
 
 instance Pretty Scientific where
   pretty = pretty . show
 
-instance Pretty AccountName where
+instance Pretty Segment where
   pretty = pretty . show
 
 instance Pretty CommodityName where

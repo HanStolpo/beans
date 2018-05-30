@@ -10,7 +10,7 @@ import           Data.Time.Calendar       (Day, fromGregorian)
 import           Haricot.Accounts         (Accounts, Key (..),
                                            RestrictedAccounts (..),
                                            Restrictions, updateAccounts)
-import           Haricot.AST              (AccountName (..), Balance (..),
+import           Haricot.AST              (AccountName, Balance (..),
                                            CommodityName (..), Flag (..),
                                            Lot (..), Open (..), Posting (..),
                                            Restriction (..), Transaction (..))
